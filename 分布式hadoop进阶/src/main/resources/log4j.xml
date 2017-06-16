@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!-- Specify the refresh internal in seconds. -->
+<!DOCTYPE log4j:configuration SYSTEM "log4j.dtd"> 
+<log4j:configuration monitorInterval="60">
+    <appender name="CONSOLE" class="org.apache.log4j.ConsoleAppender">     
+			  <layout class="org.apache.log4j.PatternLayout">     
+			   <param name="ConversionPattern"     
+			    				value="%d - %c -%-4r [%t] %-5p %x - %m%n" />     
+			  </layout>   
+	 </appender>  
+	  <logger name="org.apache.hadoop.security.Groups" additivity="true">        
+        <level value="debug" />        
+        <appender-ref ref="CONSOLE" />        
+    </logger>  
+	 <root>     
+  		<priority value="debug" />     
+	    <appender-ref ref="CONSOLE" />     
+ 	</root> 
+</log4j:configuration>
