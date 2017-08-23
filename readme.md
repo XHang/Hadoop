@@ -27,8 +27,14 @@ hadoop是一个分布式应用系统。看起来好像是专门处理大数据�
 
 
 ## 2:安装
-先决条件：java  ssh软件安装完毕  
- ** 从解压完毕进入到解压目录讲起**
+先决条件：
+1. java  ssh软件安装完毕  
+2. 看你系统的位数和hadoop安装的位数，两者一定要一致。什么，安装了hadoop后怎么看hadoop位数？  
+  	假设你已经安装好hadoop，如图所示  
+  	![吔屎啦，图片显示不出来]    (https://github.com/XHang/Node/blob/master/java%E5%BC%95%E7%94%A8%E4%BC%A0%E9%80%92%E7%A4%BA%E4%BE%8B.png)   
+  	**惨痛的教训。。。**   
+ ** 从解压完毕进入到解压目录讲起**   
+ 
 ### 第一步
 编辑这个文件 `etc/hadoop/hadoop-env.sh`
  设置java环境变量如下所示
@@ -56,14 +62,21 @@ hadoop是一个分布式应用系统。看起来好像是专门处理大数据�
        		 	<name>fs.defaultFS</name>
         		<value>hdfs://localhost:9000</value>
     		</property>
+    		<property>
+                <name>hadoop.tmp.dir</name>
+                <value>file:/home/hadoop/hadoop-2.7.1/hadoopTemp</value>
+                <description>Abase for other temporary directories.</description>
+        </property>
 	</configuration>
 	
 解释：配置NameNode结点的URI,包括协议，url，端口  
 			集群里面的每一台机器都需要知道NameNode的地址。  
 			DataNode结点会先在NameNode上注册，这样它们的数据才可以被使用。  
 			独立的客户端程序通过这个URI跟DataNode交互，以取得文件的块列表。  
-			可以认为NameNode是中央节点吧，DataNode要注册在NameNode上面。
-			客户端通过和NameNode交互，就可以知道有什么DataNode
+			可以认为NameNode是中央节点吧，DataNode要注册在NameNode上面。  
+			客户端通过和NameNode交互，就可以知道有什么DataNode  
+			另：hadoop.tmp.dir是hadoop的临时目录，默认为/tmp/hadoo-hadoop.这个默认目录系统启动会随之删除。  
+			建议自己建一个
 ### 第五步  
 编辑：`etc/hadoop/hdfs-site.xml:`  
 加上
@@ -109,7 +122,56 @@ NameNode将使用SSH协议启动DataNode进程，伪分布模式下DataNode和Na
 停止NameNode和DataNode的守护进程  
  `sbin/stop-dfs.sh`  
  
-## 3脚本
+## 3 hadoop命令指南
+hadoop命令基本都是这种形式  
+`shellcommand [SHELL_OPTIONS] [COMMAND] [GENERIC_OPTIONS] [COMMAND_OPTIONS]`
+关键点：
+1. shellcommand   这个是指定调用的哪个项目的命令。   
+	比如，Hadoop的hadoop   ，HDFS的hdfs ,  YARN 的yarn  
+2. SHELL_OPTIONS  执行java命令之前shell命令的选项，如：  
+	--buildpaths  启用开发版的jar包    
+	--config confdir  覆盖默认的配置目录，默认是：$HADOOP_HOME/etc/hadoop    
+	--daemon mode  守护线程模式  如果这个命令支持守护线程，则以适当形式运行，不支持守护线程的命令，你写了也没用  
+	--debug  启用shell级别的日志记录  
+	--help  帮助信息。  
+	--hosts  当workers使用时，使用主机名列表覆盖workers的文件，如果workers没有，则选项忽略。  
+	--loglevel loglevel  覆盖的日志级别，可以用的日志级别有 FATAL, ERROR, WARN, INFO, DEBUG, and TRACE. Default is INFO.   
+	--workers  如果可能，在workers文件中所有主机执行该命令。  
+	  
+3. COMMAND  要执行的命令  
+4. GENERIC_OPTIONS  这个是很多命令都支持的通用选项,不是所有命令都有这个。。    
+	-archives <逗号分隔的档案列表>   在计算机上指定要解除归档的档案列表，只适用于 job.   
+	-conf <configuration file>  指定应用的配置文件  
+	-D <property>=<value>  使用给定属性的值  
+	-files <逗号分隔的文件列表>指定要复制到map reduce cluster的逗号分隔文件。 仅适用于 job. 。  
+	-fs <file:///> or <hdfs://namenode:port>  指定要使用的默认文件系统URL。 覆盖配置中的“fs.defaultFS”属性。  
+	-jt <local> or <resourcemanager:port> 指定ResourceManager。 仅适用于 job.   
+	-libjars <comma seperated list of jars> 指定在类路径中的jar文件列表，用逗号分隔。 仅适用于jod。  
+
+### hadoop通用的命令
+介绍：所有这些命令都是从hadoop shell命令执行的。 它们被分解成用户命令和管理命令  
+1. archive ，详细看档案那一章
+2.  checknative
+	`hadoop checknative [-a] [-h]`
+	-a  检查所以库文件是否可用
+	
+	
+   5.COMMAND_OPTIONS  命令选项，其他不解释  
+
+## hadoop的问题
+1. 无论执行什么命令，总有Unable to load native-hadoop library for your platform... using builtin-java classes where applicable
+	大多是因为你下载和安装的hadoop是编译好的，而且还是32位，但是你的机子是64位的。所以你需要自己去下载源码到本机编译。
+	`http://dl.bintray.com/sequenceiq/sequenceiq-bin/`这个网站已经有64位的，编译好的了。
+	还有可能是。。。
+
+
+
+
+
+
+
+
+
 hadoop的脚本全部都要在`bin/hadoop`里面调用,运行没有参数的hadoop会打印所有命令
 基本命令格式：`hadoop [--config confdir] [--loglevel loglevel] [COMMAND] [GENERIC_OPTIONS] [COMMAND_OPTIONS]`  
 解释：
@@ -126,6 +188,7 @@ FATAL, ERROR, WARN, INFO, DEBUG, and TRACE. 默认是INFO
 
 	何谓归档：包括归档文件和归档目录：归档文件是特殊的文件档案，这种文件通常具有har的后缀名
 				归档目录通常包含元数据（以_index和_masterindex的形式）和数据（part- *）文件
+				
 
 
 
