@@ -31,9 +31,10 @@ hadoop是一个分布式应用系统。看起来好像是专门处理大数据�
 1. java  ssh软件安装完毕  
 2. 看你系统的位数和hadoop安装的位数，两者一定要一致。什么，安装了hadoop后怎么看hadoop位数？  
   	假设你已经安装好hadoop，如图所示  
-  	![吔屎啦，图片显示不出来]    (https://github.com/XHang/Hadoop/blob/Hadoop/hadoop%E4%BD%8D%E6%95%B0.png)   
+  	![吔屎啦，图片显示不出来]  
+(https://github.com/XHang/Hadoop/blob/Hadoop/hadoop%E4%BD%8D%E6%95%B0.png)   
   	**惨痛的教训。。。**   
- ** 从解压完毕进入到解压目录讲起**   
+ **从解压完毕进入到解压目录讲起**   
  
 ### 第一步
 编辑这个文件 `etc/hadoop/hadoop-env.sh`
