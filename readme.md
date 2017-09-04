@@ -65,7 +65,7 @@ hadoop是一个分布式应用系统。看起来好像是专门处理大数据�
     		</property>
     		<property>
                 <name>hadoop.tmp.dir</name>
-                <value>file:/home/hadoop/hadoop-2.7.1/hadoopTemp</value>
+                <value>file:/home/hadoop-2.8.1/tempFile</value>
                 <description>Abase for other temporary directories.</description>
         </property>
 	</configuration>
@@ -112,7 +112,7 @@ NameNode将使用SSH协议启动DataNode进程，伪分布模式下DataNode和Na
 接下来利用 MapReduce 来创建HDFS文件目录了  
 `bin/hdfs dfs -mkdir /user` 创建一个目录成功  
 `bin/hdfs dfs -mkdir /user/<username>`再来一个  
-` bin/hdfs dfs -put etc/hadoop/*.xml input`  把linux系统中的一个文件复制到分布式系统文件目录下   
+` bin/hdfs dfs -put etc/hadoop/*.xml /input`  把linux系统中的一个文件复制到分布式系统文件根目录input下   
 运行一个提供的示例  
 `bin/hadoop jar share/hadoop/mapreduce/hadoop-mapreduce-examples-3.0.0-alpha3.jar grep input output 'dfs[a-z.]+'`  
 什么意思呢？   
