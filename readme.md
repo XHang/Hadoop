@@ -109,6 +109,7 @@ NameNode将使用SSH协议启动DataNode进程，伪分布模式下DataNode和Na
 接下来创建分布式文件系统吧  
 `bin/hdfs namenode -format`  文件系统创建完毕  
 `sbin/start-dfs.sh` 开启NameNode和DataNode  
+
 接下来利用 MapReduce 来创建HDFS文件目录了  
 `bin/hdfs dfs -mkdir /user` 创建一个目录成功  
 `bin/hdfs dfs -mkdir /user/<username>`再来一个  
@@ -122,6 +123,46 @@ NameNode将使用SSH协议启动DataNode进程，伪分布模式下DataNode和Na
 `bin/hdfs dfs -cat output/*`  
 停止NameNode和DataNode的守护进程  
  `sbin/stop-dfs.sh`  
+### 第八步：在伪分布式模式下运行YARN上的MapReduce作业。
+YARN是什么？YARN是为了替换老套的，原先的MapReduce job的调度管理。
+YARN将 ResourceManagement 资源管理和JobScheduling/JobMonitoring 任务调度监控分开。
+用 ResourceManger和 ApplicationMaster这两个进程来管理。
+要启用这个的话，需要配置一下内容
+PS：可能你会找不到这个文件，只有mapred-site.xml.template这个文件
+把它复制到当前目录，并改名为mapred-site.xml
+再PS：官网坑爹啊
+etc/hadoop/mapred-site.xml:
+
+	<configuration>
+    <property>
+        <name>mapreduce.framework.name</name>
+        <value>yarn</value>
+    </property>
+	</configuration> 
+
+etc/hadoop/yarn-site.xml:、
+
+	<configuration>
+    <property>
+        <name>yarn.nodemanager.aux-services</name>
+        <value>mapreduce_shuffle</value>
+    </property>
+    <property>
+        <name>yarn.nodemanager.env-whitelist</name>
+        	<value>JAVA_HOME,HADOOP_COMMON_HOME,HADOOP_HDFS_HOME,HADOOP_CONF_DIR,CLASSPATH_PREPEND_DISTCACHE,HADOOP_YARN_HOME,HADOOP_MAPRED_HOME
+        	</value>
+    </property>
+	</configuration>
+	
+配置完毕，启动yarn
+  $ sbin/start-yarn.sh
+  当然关闭就要使用
+  $ sbin/stop-yarn.sh
+  完成了这个任务以后启动hdfs后还要启动yarn
+  注意看下日志启动过程有没有error，反正我是没有。。
+  不过差点被几个小时的log骗了。。。
+ 
+ 
  
 ## 3 hadoop命令指南
 hadoop命令基本都是这种形式  
@@ -157,7 +198,29 @@ hadoop命令基本都是这种形式
 	-a  检查所以库文件是否可用
 	
 	
-   5.COMMAND_OPTIONS  命令选项，其他不解释  
+   5.COMMAND_OPTIONS  命令选项，其他不解释   
+### hadoop 档案详解  
+hadoop的档案是一个特殊的档案，用于将所有小文件整合一个文件，整合后的文件还可以通过访问每一个小文件，并且作为mapreduce任务的输入，其实类似于压缩，不过hadoop创建归档文件会消耗和源文件一样的硬盘空间，也就是说，这，丫，没，有，压，缩，功，能！
+	特性如下：
+1. hadoop将归档文件映射到文件系统目录。  
+2. hadoop的归档文件有har的后缀名  
+3. hadoo归档目录包含许多metadata（就是形如_index 和_masterindex）和数据文件（part-*）  
+4. _index文件包含了归档文件的名称和数据文件（part-*）的位置  
+接下来讲命令了  
+1. 怎么创建一个档案?  
+用法：`Usage: hadoop archive -archiveName name -p <parent> [-r <replication factor>] <src>* <dest>`  
+解释：-archiveName是要归档的名称，举个栗子，比如说：`勇者斗恶龙nds.har`。看到没，这个名称必须带有har扩展名
+			parent是文件应放到哪个位置的相等路径，比如说:`-p /勇者斗恶龙nds/bar a/b/c e/f/g`,这里的`/勇者斗恶龙nds/bar`是父路径，后面的是相对路径
+			划重点，这个命令是一个Map / Reduce作业，你需要一个map reduce集群来运行这个
+			还有-r表示复制的要素，默认不写的话使用要素3
+			如果你只想归档一个目录，使用这个命令足矣：`hadoop archive -archiveName zoo.har -p /foo/bar -r 3 /outputdir`
+
+## hadoop的伪分布式和完全分布式区别
+独立式直接对象文件系统进行操作，而且科学的情况下不可能用到这个形式，故此不讲
+伪分布式嘛，就是namenode和datanode在一台机器的不同线程里运行。  
+完全分布式，那就是一台机器做namenode，下辖若干个机器装载datanode
+此外从分布式应用的角度来说，集群中的结点由一个JobTracker和若干个TaskTracker组成，JobTracker负责任务的调度，TaskTracker负责并行执行任务。  
+TaskTracker必须运行在DataNode上，这样便于数据的本地计算。JobTracker和NameNode则无须在同一台机器上。
 
 ## hadoop的问题
 1. 无论执行什么命令，总有Unable to load native-hadoop library for your platform... using builtin-java classes where applicable
@@ -165,7 +228,28 @@ hadoop命令基本都是这种形式
 	`http://dl.bintray.com/sequenceiq/sequenceiq-bin/`这个网站已经有64位的，编译好的了。
 	还有可能是。。。
 
+2：
+理论上，格式化后开启hdfs后这样就可以用ip+端口访问hadoop的NameNode网页  
+默认情况下是本机ip+9870.  
+如果不行的话，看下输出日志，别被控制台的out日志骗了，日志文件应该是log格式的
+我那个之所以不能启动，是因为我只配了并且创建了hadoop.tmp.dir目录。但是里面深层的一个目录没创建，结果hadoop启动时找不到这个目录，就狗带了
+启动了这个目录后，还是不能运行hadoop，看了一下日志又是告诉我namenode没有格式化，好吧，我再格式化一次，又来报错，说什么
+`URI has an authority component`
+搞事情啊搞事情。最后给hdfs-site.xml配了
 
+		<property>    
+        <name>dfs.namenode.name.dir</name>    
+        <value>${hadoop.tmp.dir}/dfs/name</value>  
+    </property>    
+    <property>    
+        <name>dfs.datanode.data.dir</name>    
+        <value>${hadoop.tmp.dir}/dfs/data</value>  
+    </property>
+  指定一个文件路径。当然hadoop.tmp.dir要替换为你的临时文件夹路径。别用这种高端大气的变量名。
+  嗯，这样启动配会有一个警告，大概是说你只配一个路径，要小心数据的事balabala的。不管
+  最后访问http://localhost:50070。。ok，显示出来了！
+  PS:活用下JPS命令，看下那些服务未启动
+  
 
 
 
