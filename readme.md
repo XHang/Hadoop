@@ -202,18 +202,26 @@ hadoop命令基本都是这种形式
 ### hadoop 档案详解  
 hadoop的档案是一个特殊的档案，用于将所有小文件整合一个文件，整合后的文件还可以通过访问每一个小文件，并且作为mapreduce任务的输入，其实类似于压缩，不过hadoop创建归档文件会消耗和源文件一样的硬盘空间，也就是说，这，丫，没，有，压，缩，功，能！
 	特性如下：
-1. hadoop将归档文件映射到文件系统目录。  
+1. hadoop将归档文件映射到文件系统目录。  (说的直白一点就是归档文件就是文件夹)
 2. hadoop的归档文件有har的后缀名  
 3. hadoo归档目录包含许多metadata（就是形如_index 和_masterindex）和数据文件（part-*）  
 4. _index文件包含了归档文件的名称和数据文件（part-*）的位置  
 接下来讲命令了  
 1. 怎么创建一个档案?  
 用法：`Usage: hadoop archive -archiveName name -p <parent> [-r <replication factor>] <src>* <dest>`  
-解释：-archiveName是要归档的名称，举个栗子，比如说：`勇者斗恶龙nds.har`。看到没，这个名称必须带有har扩展名
-			parent是文件应放到哪个位置的相等路径，比如说:`-p /勇者斗恶龙nds/bar a/b/c e/f/g`,这里的`/勇者斗恶龙nds/bar`是父路径，后面的是相对路径
+解释：-archiveName是归档文件的名称，举个栗子，比如说：`勇者斗恶龙nds.har`。看到没，这个名称必须带有har扩展名
+			parent是文件应放到哪个位置的相等路径，比如说:`-p /foo/bar a/b/c e/f/g`,这里的`/foo/bar`或者`a/b/c`是父路径，后面的是相对路径
 			划重点，这个命令是一个Map / Reduce作业，你需要一个map reduce集群来运行这个
 			还有-r表示复制的要素，默认不写的话使用要素3
+			src和desc就不用说了吧，一个是要归档的原文件夹，desc就是归档文件存放的位置
 			如果你只想归档一个目录，使用这个命令足矣：`hadoop archive -archiveName zoo.har -p /foo/bar -r 3 /outputdir`
+2. 怎么删除一个档案？
+hadoop fs -rmr ${har文件绝对路径};  or  hadoop fs -rm -r ${har文件绝对路径}
+
+### hadoop文件系统目录详解
+	划重点：hadoop的文件系统命令很多都跟linux的文件系统命令是相似的，但是原本命令可能是这样rm -rf  
+	hadoop的命令都要加上hadoop前缀。rm要加前缀‘-’，-rf要分开，亦即-r-f
+	
 
 ## hadoop的伪分布式和完全分布式区别
 独立式直接对象文件系统进行操作，而且科学的情况下不可能用到这个形式，故此不讲
@@ -250,6 +258,21 @@ TaskTracker必须运行在DataNode上，这样便于数据的本地计算。JobT
   最后访问http://localhost:50070。。ok，显示出来了！
   PS:活用下JPS命令，看下那些服务未启动
   
+  3. 偶尔执行文件系统命令会出现`Name node is in safe mode.`
+  	这一般出现在hadoop系统启动不久或者其他情况  
+  	大概意思是说安全模式下hadoop在忙着抓内贼，检查数据有效性balabalabal
+  	这个模式下它没空搭理你的请求，文件也就不能修改，删除，保存了。
+  	可通过这个命令离开安全模式`bin/hadoop dfsadmin -safemode leave `
+  	除了leave外，还有其他命令
+ <pre>
+  	enter - 进入安全模式
+	leave - 强制NameNode离开安全模式
+	get - 返回安全模式是否开启的信息
+	wait - 等待，一直到安全模式结束。
+</pre>
+
+4. 偶尔用其他浏览器打开hadoop管理页面会打不开，关闭防火墙就行了
+  
 
 
 
@@ -274,8 +297,15 @@ FATAL, ERROR, WARN, INFO, DEBUG, and TRACE. 默认是INFO
 	何谓归档：包括归档文件和归档目录：归档文件是特殊的文件档案，这种文件通常具有har的后缀名
 				归档目录通常包含元数据（以_index和_masterindex的形式）和数据（part- *）文件
 				
-
-
+				
+				实验
+				现在根目录有一个example1							
+									|			|		
+							example1_1		example1_2
+							|			|
+				example1_1_1	  example1_1_2
+				每个文件夹都有一个文件
+				测试命令是这条：hadoop archive -archiveName example.har -p /example1 example1_1  [-r <replication factor>] <src>* <dest>
 
 
 
