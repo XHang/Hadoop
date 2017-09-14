@@ -196,6 +196,24 @@ hadoop命令基本都是这种形式
 2.  checknative
 	`hadoop checknative [-a] [-h]`
 	-a  检查所以库文件是否可用
+3. `hadoop classpath [--glob |--jar <path> |-h |--help]` 打印hadoop jar和所需库的类路径。  
+	如果调用无参数，则打印命令脚本里面的写好的类路径。
+	其他不清楚。。
+4：`hadoop credential <subcommand> [options]`
+	管理证书提供者内的凭据，密码和秘密的命令。  
+	暂时用不上，不理会。
+5. ` hadoop distch [-f urilist_url] [-i] [-log logdir] path:owner:group:permissions`
+	一次更改许多文件的所有权和权限。
+	参数说明
+	-f 需要更改的文件列表
+	-i 忽视过程中的失败
+	-log 打印更改的文件列表
+6. DistCp
+	这个是集群内部使用的大型内部/群集间复制的工具
+	普通的复制用cp命令就行了。
+	关于这个命令，如果需要可以去了解
+	
+	
 	
 	
    5.COMMAND_OPTIONS  命令选项，其他不解释   
@@ -208,15 +226,27 @@ hadoop的档案是一个特殊的档案，用于将所有小文件整合一个�
 4. _index文件包含了归档文件的名称和数据文件（part-*）的位置  
 接下来讲命令了  
 1. 怎么创建一个档案?  
-用法：`Usage: hadoop archive -archiveName name -p <parent> [-r <replication factor>] <src>* <dest>`  
-解释：-archiveName是归档文件的名称，举个栗子，比如说：`勇者斗恶龙nds.har`。看到没，这个名称必须带有har扩展名
-			parent是文件应放到哪个位置的相等路径，比如说:`-p /foo/bar a/b/c e/f/g`,这里的`/foo/bar`或者`a/b/c`是父路径，后面的是相对路径
-			划重点，这个命令是一个Map / Reduce作业，你需要一个map reduce集群来运行这个
-			还有-r表示复制的要素，默认不写的话使用要素3
-			src和desc就不用说了吧，一个是要归档的原文件夹，desc就是归档文件存放的位置
-			如果你只想归档一个目录，使用这个命令足矣：`hadoop archive -archiveName zoo.har -p /foo/bar -r 3 /outputdir`
+用法：`Usage: hadoop archive -archiveName name -p <parent> [-r <replication factor>] <src>* <dest>`    
+解释：-archiveName是归档文件的名称，举个栗子，比如说：`勇者斗恶龙nds.har`。看到没，这个名称必须带有har扩展名  
+			parent是文件应放到哪个位置的相等路径，比如说:`-p /foo/bar a/b/c e/f/g`,这里的`/foo/bar`是父路径，后面的是相对路径，父路径的内容不会归档，只有相对路径下的文件夹才会归档  
+			src 就是可以继续指定要归档文件夹路径，但必须在父路径下面，使用相对路径。desc就是存放har的路径了  
+			划重点，这个命令是一个Map / Reduce作业，你需要一个map reduce集群来运行这个  
+			还有-r表示复制的要素，默认不写的话使用要素3  
+			src和desc就不用说了吧，一个是要归档的原文件夹，desc就是归档文件存放的位置  
+示例`/bin/hadoop archive -archiveName example.har -p /Example Example_2/Example_2_1 Example_1/Example_1_1 -r 3 Example_3 /outputdir`
+将
+			
+				/Example/  Example_2/Example_2_1 
+				/Example/  Example_1/Example_1_1
+				/Example/  Example_3
+				
+这三个文件夹里面的文件全部归档到名字叫example.har的文件中，放到/outputdir目录下   
+还归档了这三个路径的相对路径，父路径被替换成har文件。     
+
 2. 怎么删除一个档案？
 hadoop fs -rmr ${har文件绝对路径};  or  hadoop fs -rm -r ${har文件绝对路径}
+3.怎么查看har原来的面目？
+这个语法`./bin/hdfs dfs -lsr har:////outputdir/example.har`  可以查看位于/outputdir/example.har这个har文件被归档的文件夹和文件
 
 ### hadoop文件系统目录详解
 	划重点：hadoop的文件系统命令很多都跟linux的文件系统命令是相似的，但是原本命令可能是这样rm -rf  
@@ -234,7 +264,6 @@ TaskTracker必须运行在DataNode上，这样便于数据的本地计算。JobT
 1. 无论执行什么命令，总有Unable to load native-hadoop library for your platform... using builtin-java classes where applicable
 	大多是因为你下载和安装的hadoop是编译好的，而且还是32位，但是你的机子是64位的。所以你需要自己去下载源码到本机编译。
 	`http://dl.bintray.com/sequenceiq/sequenceiq-bin/`这个网站已经有64位的，编译好的了。
-	还有可能是。。。
 
 2：
 理论上，格式化后开启hdfs后这样就可以用ip+端口访问hadoop的NameNode网页  
@@ -273,6 +302,9 @@ TaskTracker必须运行在DataNode上，这样便于数据的本地计算。JobT
 
 4. 偶尔用其他浏览器打开hadoop管理页面会打不开，关闭防火墙就行了
   
+## hadoop的javaapi使用
+例子1：字数统计例子
+这个例子最能体现MapReduce的设计思想了，实际上MapReduce也经常干这事
 
 
 
@@ -280,32 +312,6 @@ TaskTracker必须运行在DataNode上，这样便于数据的本地计算。JobT
 
 
 
-hadoop的脚本全部都要在`bin/hadoop`里面调用,运行没有参数的hadoop会打印所有命令
-基本命令格式：`hadoop [--config confdir] [--loglevel loglevel] [COMMAND] [GENERIC_OPTIONS] [COMMAND_OPTIONS]`  
-解释：
-1. --config confdir  这个参数是使用的配置文件目录，默认不写就是`$ {HADOOP_HOME} / conf`    
-2. --loglevel loglevel  这个参数是覆盖的日志等级，可用参数有：
-FATAL, ERROR, WARN, INFO, DEBUG, and TRACE. 默认是INFO   
-3. COMMAND 命令符，
-4. GENERIC_OPTIONS   常规选项
-5. COMMAND_OPTIONS  命令选项  
-因此，一个完整的命令格式应该是这样的
-
-###　常规选项　GENERIC_OPTIONS
--archives<path1,path2>　　　注,里面是以逗号分割的归档文件列表
-
-	何谓归档：包括归档文件和归档目录：归档文件是特殊的文件档案，这种文件通常具有har的后缀名
-				归档目录通常包含元数据（以_index和_masterindex的形式）和数据（part- *）文件
-				
-				
-				实验
-				现在根目录有一个example1							
-									|			|		
-							example1_1		example1_2
-							|			|
-				example1_1_1	  example1_1_2
-				每个文件夹都有一个文件
-				测试命令是这条：hadoop archive -archiveName example.har -p /example1 example1_1  [-r <replication factor>] <src>* <dest>
 
 
 
